@@ -1,0 +1,25 @@
+# Generated vector databases -- do not commit
+framework_dbs/
+capability_db/
+db_manifest.json
+
+# Actual documents -- keep out of version control
+capability_docs/pdf_files/*.pdf
+capability_docs/docx_files/*.docx
+capability_docs/txt_files/*.txt
+capability_docs/md_files/*.md
+framework_docs/*.pdf
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
