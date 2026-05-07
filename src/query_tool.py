@@ -8,7 +8,7 @@ or a full audit across all frameworks.
 import os
 from typing import List, Dict, Any
 
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 
 from scan_groups import FRAMEWORKS, SCAN_GROUPS, CAPABILITY_DB
