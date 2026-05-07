@@ -83,6 +83,18 @@ Capability document management and overlap detection:
 python src/capability_update_helper.py
 ```
 
+Check whether newer framework documents are available at source URLs:
+
+```
+python src/doc_version_checker.py
+```
+
+Download updates when newer versions are detected:
+
+```
+python src/doc_version_checker.py --update
+```
+
 ## Scan Modes
 
 | Mode | Frameworks |

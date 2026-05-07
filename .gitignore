@@ -2,6 +2,7 @@
 framework_dbs/
 capability_db/
 db_manifest.json
+doc_version_cache.json
 
 # Actual documents -- keep out of version control
 capability_docs/pdf_files/*.pdf

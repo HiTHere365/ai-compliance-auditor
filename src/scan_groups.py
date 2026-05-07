@@ -37,7 +37,7 @@ FRAMEWORKS = {
         "name": "MIT Secure-by-Design AI Framework",
         "db_dir": "./framework_dbs/mit_secure_by_design_db",
         "collection": "mit_secure_by_design_requirements",
-        "source_doc": "./framework_docs/mit_secure_by_design.pdf",
+        "source_doc": "./framework_docs/mit_secure_by_design.md",
         "chunk_size": 800,
         "chunk_overlap": 150,
         "group": "maturity",
