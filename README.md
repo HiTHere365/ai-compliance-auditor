@@ -110,6 +110,9 @@ Python 3.10+. All embedding runs locally using `all-mpnet-base-v2`. No external 
 
 ## License
 
-GNU Affero General Public License v3.0 (AGPL v3)
+Copyright (c) 2026 William Rogers. All Rights Reserved.
 
-For commercial licensing or research collaboration: volts-beret0t@icloud.com
+This is proprietary software. No permission is granted to use, copy, modify,
+or distribute this material without prior written consent.
+
+For licensing inquiries or research collaboration: volts-beret0t@icloud.com
