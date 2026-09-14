@@ -10,6 +10,11 @@ capability_docs/docx_files/*.docx
 capability_docs/txt_files/*.txt
 capability_docs/md_files/*.md
 framework_docs/*.pdf
+# Fictional sample document used by the quick start; safe to commit
+!capability_docs/txt_files/example_meridian_support_assistant.txt
+
+# Saved scan output
+outputs/
 
 # Python
 __pycache__/

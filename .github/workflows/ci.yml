@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # requirements.txt is deliberately not installed here. It pulls in
+      # sentence-transformers and therefore PyTorch (well over 1 GB), which is
+      # only needed to embed documents. The test suite exercises the text-repair
+      # and document-loading helpers in src/setup_databases.py, and importing
+      # that module needs only the packages below. langchain-huggingface is
+      # imported at module level, but its base install does not depend on
+      # sentence-transformers (that lives behind its "full" extra), so the
+      # import succeeds without PyTorch.
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest pymupdf langchain-core langchain-community langchain-text-splitters langchain-huggingface
+
+      - name: Run tests
+        run: pytest -q tests

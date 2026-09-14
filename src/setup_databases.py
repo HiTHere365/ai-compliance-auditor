@@ -11,8 +11,8 @@ import logging
 from pathlib import Path
 from typing import List
 
+import fitz
 from langchain_community.document_loaders import (
-    PyPDFLoader,
     Docx2txtLoader,
     TextLoader,
     UnstructuredMarkdownLoader,
@@ -27,6 +27,108 @@ from scan_groups import FRAMEWORKS, CAPABILITY_DB
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
+# Control identifiers tagged onto framework chunks, e.g. "LLM01:2025" (OWASP)
+# or "GV-1.2" (NIST AI 600-1 / AI RMF style).
+CONTROL_ID_PATTERN = re.compile(r'\b(?:LLM\d{2}(?::\d{4})?|[A-Z]{1,3}-\d+\.\d+)\b')
+
+
+def _clean_spaced_text(text: str) -> str:
+    """Repair common PDF text-extraction artifacts.
+
+    Strips control characters, removes single-letter bullet glyphs left over
+    from symbol fonts, and collapses character-spaced runs ("O W A S P") back
+    into words. Text without these artifacts passes through unchanged.
+    """
+    # Strip PDF control characters (everything except tab, newline, carriage return)
+    text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]', '', text)
+    # Remove PDF bullet glyph artifacts (OWASP uses L, g, Q, and others as bullet chars):
+    #   "[non-alpha][letter] text" at line start  -> "text"
+    #   "word[UPPERCASE]\n"                       -> "word\n"
+    text = re.sub(r'(?m)^[^a-zA-Z0-9\s][A-Za-z] ', '', text)
+    text = re.sub(r'(?<=[a-z])[A-Z]\n', '\n', text)
+    # Fix character-level spacing artifact: "O W A S P" -> "OWASP"
+    # Detects runs separated by double-spaces as word boundaries
+    result = []
+    for line in text.split('\n'):
+        groups = re.split(r' {2,}', line)
+        fixed = []
+        for group in groups:
+            chars = [c for c in group.split(' ') if c.strip()]
+            if chars and all(len(c) == 1 for c in chars):
+                fixed.append(''.join(chars))
+            else:
+                fixed.append(group)
+        result.append(' '.join(fixed))
+    return '\n'.join(result)
+
+
+def _load_pdf(filepath: str) -> List[Document]:
+    """Extract one Document per non-empty page using PyMuPDF.
+
+    Spans set in Type3 fonts are dropped because PDF producers commonly use
+    them for bullet and decoration glyphs that extract as stray letters. If a
+    page contains no text outside Type3 spans (some PDFs are typeset entirely
+    in Type3 fonts), the page is kept unfiltered instead of being discarded.
+    """
+    doc = fitz.open(filepath)
+    documents = []
+    for page_num, page in enumerate(doc):
+        filtered_lines = []
+        all_lines = []
+        for block in page.get_text("dict")["blocks"]:
+            if "lines" not in block:
+                continue
+            for line in block["lines"]:
+                spans = line["spans"]
+                all_parts = [span["text"] for span in spans]
+                kept_parts = [
+                    span["text"]
+                    for span in spans
+                    if "Type3" not in span.get("font", "")
+                ]
+                if all_parts:
+                    all_lines.append("".join(all_parts))
+                if kept_parts:
+                    filtered_lines.append("".join(kept_parts))
+        text = "\n".join(filtered_lines)
+        if not text.strip():
+            text = "\n".join(all_lines)
+        if text.strip():
+            documents.append(Document(
+                page_content=text,
+                metadata={"source": filepath, "page": page_num},
+            ))
+    return documents
+
+
+def load_document(filepath: str) -> List[Document]:
+    """Load a single file based on its extension and normalize its text.
+
+    Shared by the initial build and the incremental updater so both index
+    identical text for the same file.
+    """
+    ext = Path(filepath).suffix.lower()
+    try:
+        if ext == ".pdf":
+            docs = _load_pdf(filepath)
+        else:
+            if ext == ".docx":
+                loader = Docx2txtLoader(filepath)
+            elif ext == ".txt":
+                loader = TextLoader(filepath, encoding="utf-8")
+            elif ext == ".md":
+                loader = UnstructuredMarkdownLoader(filepath)
+            else:
+                logger.warning(f"Unsupported file type: {filepath}")
+                return []
+            docs = loader.load()
+        for doc in docs:
+            doc.page_content = _clean_spaced_text(doc.page_content)
+        return docs
+    except Exception as e:
+        logger.error(f"Failed to load {filepath}: {e}")
+        return []
+
 
 class DatabaseSetup:
     def __init__(self, embedding_model: str = "all-mpnet-base-v2"):
@@ -40,23 +142,7 @@ class DatabaseSetup:
 
     def load_file(self, filepath: str) -> List[Document]:
         """Load a single file based on its extension."""
-        ext = Path(filepath).suffix.lower()
-        try:
-            if ext == ".pdf":
-                loader = PyPDFLoader(filepath)
-            elif ext == ".docx":
-                loader = Docx2txtLoader(filepath)
-            elif ext == ".txt":
-                loader = TextLoader(filepath, encoding="utf-8")
-            elif ext == ".md":
-                loader = UnstructuredMarkdownLoader(filepath)
-            else:
-                logger.warning(f"Unsupported file type: {filepath}")
-                return []
-            return loader.load()
-        except Exception as e:
-            logger.error(f"Failed to load {filepath}: {e}")
-            return []
+        return load_document(filepath)
 
     def load_capability_docs(self) -> List[Document]:
         """Load all capability documents from all supported subdirectories."""
@@ -144,7 +230,7 @@ class DatabaseSetup:
         chunks = splitter.split_documents(documents)
 
         for chunk in chunks:
-            match = re.search(r'\b[A-Z]{1,3}-\d+\.\d+\b', chunk.page_content)
+            match = CONTROL_ID_PATTERN.search(chunk.page_content)
             if match:
                 chunk.metadata["control_id"] = match.group()
 

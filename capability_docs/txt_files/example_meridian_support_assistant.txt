@@ -1,0 +1,86 @@
+Meridian Support Assistant: System Capability Overview
+
+This is a fictional sample document. Meridian Systems, its products, and the
+figures below are invented for demonstration purposes only.
+
+## 1. Purpose and Scope
+
+The Meridian Support Assistant is a customer-service chatbot deployed on the
+Meridian Systems help center and inside the Meridian mobile application. It
+answers billing questions, walks customers through device troubleshooting,
+and opens or updates support tickets on the customer's behalf. It handles
+first-line support for consumer and small-business accounts in English and
+Spanish.
+
+## 2. Model Access
+
+The assistant is built on a hosted general-purpose large language model
+accessed through a vendor API over TLS. Meridian does not fine-tune the base
+model. Behavior is controlled through a versioned system prompt and a
+retrieval layer that supplies approved help-center articles as context.
+
+Access to the vendor API is restricted to the assistant's backend service
+account. API credentials are stored in the company secrets manager and
+rotated every 90 days. Product staff cannot call the model directly; all
+traffic passes through the assistant backend, which enforces a per-customer
+rate limit of 60 messages per hour.
+
+## 3. Tool Use
+
+The assistant can invoke the following internal tools during a conversation:
+
+- lookup_account: reads account status, plan, and last three invoices for the
+  authenticated customer only.
+- create_ticket: opens a support ticket in the Meridian ticketing system with
+  the conversation summary attached.
+- update_ticket: appends notes to an existing ticket owned by the customer.
+- schedule_callback: books a phone callback slot with a human agent.
+- knowledge_search: retrieves approved help-center articles.
+
+The assistant cannot issue refunds, change billing details, cancel service,
+or access accounts other than the one authenticated in the current session.
+Tool calls that would modify account data beyond ticket notes are rejected by
+the backend policy layer regardless of model output.
+
+## 4. Data Handling and Retention
+
+Conversation transcripts are retained for 30 days to support ticket follow-up
+and are then deleted. Transcripts are stored encrypted at rest in the
+Meridian customer-data region and are not shared with the model vendor beyond
+the API request itself. The vendor contract specifies that prompts and
+completions are not retained by the vendor or used for model training.
+
+Customers can request deletion of their transcripts earlier than 30 days
+through the privacy request form. Account numbers and payment card fragments
+are masked before any text is sent to the model.
+
+## 5. Human Escalation
+
+The assistant hands the conversation to a human agent when any of the
+following occur:
+
+- The customer asks for a person, uses words such as "agent", "human", or
+  "representative", or expresses frustration in two consecutive messages.
+- The conversation exceeds eight turns without resolving the issue.
+- The customer mentions a safety issue with a device, a legal claim, or a
+  request involving a deceased account holder.
+- The assistant's confidence in the retrieved articles falls below the
+  configured threshold.
+
+During business hours the handoff is a live chat transfer; outside business
+hours the assistant books a callback and creates a ticket. The full
+conversation is visible to the receiving agent.
+
+## 6. Access Control and Change Management
+
+Changes to the system prompt, tool definitions, or retrieval corpus require a
+pull request approved by one member of the Support Engineering team and one
+member of the Trust and Safety team. Releases follow the standard monthly
+application release train, with an emergency path for content corrections.
+
+## 7. Known Limitations
+
+The assistant may misunderstand mixed-language messages and does not support
+voice input. It relies on the freshness of the help-center corpus, which is
+reviewed quarterly. Answers about pricing are drawn only from published plan
+pages and may lag promotional offers by up to one week.

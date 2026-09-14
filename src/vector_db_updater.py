@@ -6,7 +6,6 @@ avoiding full rebuilds on every new document.
 """
 
 import os
-import re
 import shutil
 import hashlib
 import json
@@ -14,18 +13,13 @@ import logging
 from pathlib import Path
 from typing import List, Dict
 
-from langchain_community.document_loaders import (
-    PyPDFLoader,
-    Docx2txtLoader,
-    TextLoader,
-    UnstructuredMarkdownLoader,
-)
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
 
 from scan_groups import FRAMEWORKS, CAPABILITY_DB
+from setup_databases import CONTROL_ID_PATTERN, load_document
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -63,22 +57,7 @@ class VectorDBUpdater:
         return h.hexdigest()
 
     def _load_file(self, filepath: str) -> List[Document]:
-        ext = Path(filepath).suffix.lower()
-        try:
-            if ext == ".pdf":
-                loader = PyPDFLoader(filepath)
-            elif ext == ".docx":
-                loader = Docx2txtLoader(filepath)
-            elif ext == ".txt":
-                loader = TextLoader(filepath, encoding="utf-8")
-            elif ext == ".md":
-                loader = UnstructuredMarkdownLoader(filepath)
-            else:
-                return []
-            return loader.load()
-        except Exception as e:
-            logger.error(f"Failed to load {filepath}: {e}")
-            return []
+        return load_document(filepath)
 
     def _scan_capability_files(self) -> Dict[str, str]:
         files = {}
@@ -229,7 +208,7 @@ class VectorDBUpdater:
         chunks = splitter.split_documents(docs)
 
         for chunk in chunks:
-            match = re.search(r'\b[A-Z]{1,3}-\d+\.\d+\b', chunk.page_content)
+            match = CONTROL_ID_PATTERN.search(chunk.page_content)
             if match:
                 chunk.metadata["control_id"] = match.group()
 
