@@ -243,12 +243,17 @@ class DatabaseSetup:
         logger.info(f"{config['name']} database built: {len(chunks)} chunks")
         return db
 
-    def build_all(self, frameworks: List[str] = None):
-        """Build capability DB and all specified framework DBs."""
-        self.build_capability_db()
+    def build_frameworks(self, frameworks: List[str] = None):
+        """Build the specified framework DBs (all of them by default)."""
         targets = frameworks or list(FRAMEWORKS.keys())
         for key in targets:
             self.build_framework_db(key)
+        logger.info("Framework databases built.")
+
+    def build_all(self, frameworks: List[str] = None):
+        """Build capability DB and all specified framework DBs."""
+        self.build_capability_db()
+        self.build_frameworks(frameworks)
         logger.info("All databases built.")
 
 
@@ -266,7 +271,7 @@ def main():
     if choice == "1":
         setup.build_capability_db()
     elif choice == "2":
-        setup.build_all(list(FRAMEWORKS.keys()))
+        setup.build_frameworks()
     elif choice == "3":
         setup.build_all()
     elif choice == "4":
