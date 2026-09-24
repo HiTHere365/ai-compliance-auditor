@@ -103,6 +103,44 @@ The repository ships one fictional capability document, `capability_docs/txt_fil
 
    `cap:<query>` searches only the capability documents and works even when no framework database has been built.
 
+### Example output
+
+Query: `red teaming and adversarial testing` (Security Compliance scan). Capability hits all come from the shipped example; the framework sections show related controls that the sample does not cover.
+
+```
+Capability Evidence:
+Lower distance = closer match.
+
+  1. example_meridian_support_assistant.txt (distance: 1.722)
+     Meridian Support Assistant: System Capability Overview
+
+This is a fictional sample document. Meridian Systems, its products, and the
+figures below are invented for demonstration purposes only.
+
+## 1. ...
+
+  2. example_meridian_support_assistant.txt (distance: 1.735)
+     ## 3. Tool Use
+
+The assistant can invoke the following internal tools during a conversation:
+
+- lookup_account: reads account status, plan, and last three invoices for the
+ authenticated customer only...
+
+NIST GenAI 600-1 Requirements:
+Lower distance = closer match.
+
+  1. Control ID: N/A (distance: 0.863)
+     standards such as informed consent and compensation. Organizations should follow applicable human
+subjects research requirements, and best practices such as informed consent and subject compensation,...
+
+  2. Control ID: N/A (distance: 0.885)
+     Various types of AI red-teaming may be appropriate, depending on the use case:
+•
+General Public: Performed by general users (not necessarily AI or technical experts) who are
+expected to use the mode...
+```
+
 Replace the example with your own documents when you are ready; nothing in the code refers to it by name.
 
 ## Running
