@@ -1,12 +1,13 @@
 """
 Framework document version checker.
 
-Uses HTTP HEAD requests to check whether newer versions of framework documents
-are available at their source URLs. Compares Last-Modified and ETag headers
-against a local cache. Does not download anything unless --update is passed.
+Sends a one-byte ranged GET to each framework document's source URL (some
+publishers, NIST among them, reject HEAD requests) and compares the
+Last-Modified and ETag headers against a local cache. Does not download
+anything unless --update is passed.
 
-MIT Secure-by-Design and MITRE AI Maturity Model have no versioned public URLs
-and are flagged for manual review.
+OWASP, MIT Secure-by-Design and MITRE AI Maturity Model have no direct
+download URL and are listed for manual review.
 
 Usage:
     python src/doc_version_checker.py
@@ -18,29 +19,29 @@ import json
 import os
 import urllib.request
 import urllib.error
-from datetime import datetime
+from datetime import datetime, timezone
 
 CACHE_FILE = "./doc_version_cache.json"
 
 VERSIONED_DOCS = {
     "nist_genai": {
         "name": "NIST AI 600-1",
-        "url": "https://nvlpubs.nist.gov/nistpubs/ai/nist.ai.600-1.pdf",
+        "url": "https://doi.org/10.6028/NIST.AI.600-1",
         "local": "./framework_docs/nist_genai_600_1.pdf",
     },
     "mit_ai_risk": {
-        "name": "MIT AI Risk Repository",
-        "url": "https://airisk.mit.edu/sites/default/files/2024-02/AI_Risk_Repository_V1_30-01-24.pdf",
+        "name": "MIT AI Risk Repository (arXiv paper, latest version)",
+        "url": "https://arxiv.org/pdf/2408.12622",
         "local": "./framework_docs/mit_ai_risk_repository.pdf",
-    },
-    "owasp": {
-        "name": "OWASP Top 10 for LLM Applications",
-        "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/assets/PDF/OWASP-Top-10-for-LLMs-2025-v1_0.pdf",
-        "local": "./framework_docs/owasp_top10.pdf",
     },
 }
 
 MANUAL_DOCS = {
+    "owasp": {
+        "name": "OWASP Top 10 for LLM Applications",
+        "note": "The PDF is behind a download form at https://genai.owasp.org/llm-top-10/ and cannot be fetched directly.",
+        "local": "./framework_docs/owasp_top10.pdf",
+    },
     "mit_secure_by_design": {
         "name": "MIT Secure-by-Design AI Framework",
         "note": "Article-based framework. Check https://sloanreview.mit.edu for updates.",
@@ -66,16 +67,27 @@ def save_cache(cache: dict):
         json.dump(cache, f, indent=2)
 
 
-def head_request(url: str) -> dict:
-    req = urllib.request.Request(url, method="HEAD")
+def probe_url(url: str) -> dict:
+    """Fetch only the response headers by requesting the first byte.
+
+    A HEAD request would be the obvious choice, but nvlpubs.nist.gov answers
+    HEAD with 404 while serving the PDF on GET. A ranged GET works everywhere
+    and transfers one byte. Content-Range carries the full size when the
+    server honours the range; Content-Length is the fallback.
+    """
+    req = urllib.request.Request(url)
     req.add_header("User-Agent", "ai-compliance-auditor/1.0 (document version check)")
+    req.add_header("Range", "bytes=0-0")
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            content_range = resp.headers.get("Content-Range", "")
+            total = content_range.rsplit("/", 1)[-1] if "/" in content_range else None
             return {
                 "status": resp.status,
+                "final_url": resp.geturl(),
                 "last_modified": resp.headers.get("Last-Modified"),
                 "etag": resp.headers.get("ETag"),
-                "content_length": resp.headers.get("Content-Length"),
+                "content_length": total or resp.headers.get("Content-Length"),
             }
     except urllib.error.HTTPError as e:
         return {"status": e.code, "error": str(e)}
@@ -102,11 +114,13 @@ def check_versioned(key: str, doc: dict, cache: dict, do_update: bool) -> dict:
     print(f"\n{name}")
     print(f"  URL: {url}")
 
-    headers = head_request(url)
+    headers = probe_url(url)
 
     if "error" in headers:
-        print(f"  Could not reach URL: {headers['error']}")
+        print(f"  Could not reach URL (HTTP {headers.get('status')}): {headers['error']}")
         return cached
+    if headers.get("final_url") and headers["final_url"] != url:
+        print(f"  Resolves to: {headers['final_url']}")
 
     last_modified = headers.get("last_modified")
     etag = headers.get("etag")
@@ -145,7 +159,7 @@ def check_versioned(key: str, doc: dict, cache: dict, do_update: bool) -> dict:
         "last_modified": last_modified,
         "etag": etag,
         "content_length": content_length,
-        "last_checked": datetime.utcnow().isoformat() + "Z",
+        "last_checked": datetime.now(timezone.utc).isoformat() + "Z",
     }
 
 
@@ -159,7 +173,7 @@ def check_manual(key: str, doc: dict):
     print(f"  Manual check required: {note}")
     if local_exists:
         mtime = os.path.getmtime(local)
-        dt = datetime.utcfromtimestamp(mtime).strftime("%Y-%m-%d")
+        dt = datetime.fromtimestamp(mtime, timezone.utc).strftime("%Y-%m-%d")
         print(f"  Local file last modified: {dt}")
     else:
         print(f"  Local file not found: {local}")
@@ -178,7 +192,7 @@ def main():
 
     print("=" * 60)
     print("FRAMEWORK DOCUMENT VERSION CHECK")
-    print(f"Checked: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}")
+    print(f"Checked: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
     print("=" * 60)
 
     print("\n-- Versioned documents (URL-checked) --")

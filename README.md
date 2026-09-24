@@ -44,13 +44,13 @@ The framework PDFs are copyrighted and are not included in this repository (`.gi
 
 | Save as | Document | Source |
 |---|---|---|
-| `framework_docs/nist_genai_600_1.pdf` | NIST AI 600-1, Artificial Intelligence Risk Management Framework: Generative AI Profile | https://nvlpubs.nist.gov/nistpubs/ai/nist.ai.600-1.pdf |
-| `framework_docs/owasp_top10.pdf` | OWASP Top 10 for LLM Applications | https://owasp.org/www-project-top-10-for-large-language-model-applications/ (PDF under Assets) |
-| `framework_docs/mit_ai_risk_repository.pdf` | MIT AI Risk Repository | https://airisk.mit.edu/ (download the repository PDF) |
+| `framework_docs/nist_genai_600_1.pdf` | NIST AI 600-1, Artificial Intelligence Risk Management Framework: Generative AI Profile | https://doi.org/10.6028/NIST.AI.600-1 (resolves to the PDF) |
+| `framework_docs/owasp_top10.pdf` | OWASP Top 10 for LLM Applications (2025) | https://genai.owasp.org/llm-top-10/ (the PDF is behind the site's download form, so save it by hand) |
+| `framework_docs/mit_ai_risk_repository.pdf` | MIT AI Risk Repository (paper) | https://arxiv.org/pdf/2408.12622 (the live repository at https://airisk.mit.edu/ is a web tool; the arXiv paper is the citable PDF) |
 | `framework_docs/mitre_ai_maturity_model.pdf` | MITRE AI Maturity Model and Organizational Assessment Tool Guide | https://www.mitre.org/ (search publications; no stable direct link) |
 | `framework_docs/mit_secure_by_design.md` | MIT Secure-by-Design AI Framework | Included in this repository as a structured summary of the MIT Sloan Management Review article "Is Your AI System Secure by Design? 10 Questions to Ask" |
 
-`python src/doc_version_checker.py --update` fetches the NIST, OWASP, and MIT AI Risk PDFs from the URLs recorded in that script when they are missing or have changed upstream. The MITRE guide has to be downloaded by hand.
+`python src/doc_version_checker.py --update` fetches the NIST and MIT AI Risk PDFs from the URLs recorded in that script when they are missing or have changed upstream. The OWASP and MITRE documents have no direct download URL and have to be saved by hand; the checker lists them for manual review.
 
 A framework whose file is missing is skipped with a warning at build time; the remaining frameworks still build and can be queried.
 
