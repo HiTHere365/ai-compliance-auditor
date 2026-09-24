@@ -169,11 +169,6 @@ Python 3.10+. All embedding runs locally using `all-mpnet-base-v2`. PDF text ext
 
 ## License
 
-Copyright (c) 2026 William Rogers. All Rights Reserved.
+Apache License 2.0. See [LICENSE](LICENSE).
 
-This work and its contents are proprietary. No permission is granted
-to use, copy, modify, distribute, or create derivative works from
-this material, in whole or in part, without prior written consent
-from the copyright holder.
-
-For licensing inquiries or research collaboration: volts-beret0t@icloud.com
+Copyright (c) 2026 William Rogers.
