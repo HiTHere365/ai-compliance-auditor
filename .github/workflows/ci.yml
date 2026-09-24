@@ -25,7 +25,7 @@ jobs:
       - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest pymupdf langchain-core langchain-community langchain-text-splitters langchain-huggingface
+          python -m pip install pytest pymupdf langchain-core langchain-community langchain-text-splitters langchain-huggingface langchain-chroma
 
       - name: Run tests
         run: pytest -q tests

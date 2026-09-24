@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import List, Dict
 
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 
 from scan_groups import CAPABILITY_DB
 

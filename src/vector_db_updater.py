@@ -15,7 +15,7 @@ from typing import List, Dict
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_core.documents import Document
 
 from scan_groups import FRAMEWORKS, CAPABILITY_DB
