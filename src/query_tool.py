@@ -98,11 +98,12 @@ class ComplianceQueryTool:
         print("=" * 60)
 
         print("\nCapability Evidence:")
+        print("Lower distance = closer match.")
         cap_results = self.search_capabilities(query)
         if cap_results:
             for i, r in enumerate(cap_results, 1):
                 src = os.path.basename(r["source"]) if r["source"] else "Unknown"
-                print(f"\n  {i}. {src} (score: {r['score']:.3f})")
+                print(f"\n  {i}. {src} (distance: {r['score']:.3f})")
                 print(f"     {r['content'][:200]}...")
         else:
             print("  No capability evidence found.")
@@ -110,10 +111,11 @@ class ComplianceQueryTool:
         for key, db in self.framework_dbs.items():
             name = FRAMEWORKS[key]["name"]
             print(f"\n{name} Requirements:")
+            print("Lower distance = closer match.")
             results = self.search_framework(key, query)
             if results:
                 for i, r in enumerate(results, 1):
-                    print(f"\n  {i}. Control ID: {r['control_id']} (score: {r['score']:.3f})")
+                    print(f"\n  {i}. Control ID: {r['control_id']} (distance: {r['score']:.3f})")
                     print(f"     {r['content'][:200]}...")
             else:
                 print("  No matching requirements found.")
@@ -144,7 +146,7 @@ class ComplianceQueryTool:
                 results = self.search_capabilities(q)
                 for i, r in enumerate(results, 1):
                     src = os.path.basename(r["source"]) if r["source"] else "Unknown"
-                    print(f"\n  {i}. {src} (score: {r['score']:.3f})")
+                    print(f"\n  {i}. {src} (distance: {r['score']:.3f})")
                     print(f"     {r['content'][:200]}...")
 
             elif query.startswith("fw:"):
@@ -153,7 +155,7 @@ class ComplianceQueryTool:
                     key, q = parts[0].strip(), parts[1].strip()
                     results = self.search_framework(key, q)
                     for i, r in enumerate(results, 1):
-                        print(f"\n  {i}. Control: {r['control_id']} (score: {r['score']:.3f})")
+                        print(f"\n  {i}. Control: {r['control_id']} (distance: {r['score']:.3f})")
                         print(f"     {r['content'][:200]}...")
                 else:
                     print("Usage: fw:<framework_key>:<query>")
